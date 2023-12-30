@@ -14,23 +14,24 @@ class Action_Network(nn.Module):
         super(Action_Network, self).__init__()
         self.flatten = nn.Flatten()
         self.linear1 = nn.Linear(3, 12)
-        self.linear2 = nn.Linear(12, 4)
-        self.linear3 = nn.Linear(4,1)
+        self.linear2 = nn.Linear(12, 1)
+        # self.linear3 = nn.Linear(4,1)
         self.activation = nn.ReLU()
         # self.double()
         
     def forward(self, x):
         x = self.flatten(x)
         x = self.linear1(x)
-        x = self.linear2(x)
         x = self.activation(x)
-        x = self.linear3(x)
+        x = self.linear2(x)
+        # x = self.activation(x)
+        # x = self.linear3(x)
         return x
         
 
-actionR:list[int] = [-1, 0, 1, 0] # up, left, down, right
-actionC:list[int] = [0, -1, 0, 1]
-iteration_time:int = 300
+actionR = [-1, 0, 1, 0] # up, left, down, right
+actionC = [0, -1, 0, 1]
+iteration_time:int = 500
 gamma:float = 0.9
 epsilon:float = 0.3
 learning_rate:float = 0.01
@@ -39,7 +40,7 @@ np.set_printoptions(precision=4)
 batch_size = 1
 lenR = 5
 lenC = 5
-exp_buffer:deque[list[int]] = deque(maxlen=300)
+exp_buffer = deque(maxlen=300)
 
 Qnetwork = Action_Network()
 Qhat = copy.deepcopy(Qnetwork)
@@ -92,6 +93,7 @@ def explore(row:int, col:int) -> int:
             if 0 <= r1 < lenR and 0 <= c1 < lenC: # Greedy, find Q(t+1) max.
                 state = get_state(r1, c1, direction)
                 out = Qnetwork(state)[0,0].item()
+                # print(f"state({r1}, {c1}) take action {direction} Q-value{out}")
                 if out > out_max:
                     out_max = out
                     r_max = r1
@@ -106,9 +108,11 @@ def explore(row:int, col:int) -> int:
 def train_batch(batch_size:int) -> torch.Tensor:
     
     batch_sequence = np.arange(len(exp_buffer))
+    # batch_sequence = np.arange(len(exp_buffer))
     np.random.shuffle(batch_sequence)
     batch_sequence = batch_sequence[:batch_size]
     
+    # print("exp_buffer:", len(exp_buffer))
     tensorQ = []
     tensorQhat = []
     for i in range(batch_size):
@@ -174,9 +178,9 @@ def Trace_back() -> None:
 
 def DQN() -> None:
     global batch_size, exp_buffer, Qnetwork, Qhat, iteration_time
-    iteration_time = 2000
+    iteration_time = 500
     batch_size = 15
-    r = 4
+    r = 0
     c = 0
     a = [torch.Tensor] * 4
     for i in range(4):
@@ -186,12 +190,15 @@ def DQN() -> None:
         if i % 100 == 0:
             Qhat = copy.deepcopy(Qnetwork)
         # print(Qnetwork(a))
-        if i % 50 == 0:
-            for k in range(4):
-                print(Qnetwork(a[k]))
-            print('-----') # up, left, down, right
+        # if i % 50 == 0:
+        #     for k in range(4):
+        #         print(Qnetwork(a[k])[0,0].item())
+        #     print('-----') # up, left, down, right
         extend_buffer(amount=30)
         train_batch(batch_size)
+
+        # if len(exp_buffer) > 100:
+        #     train_batch(batch_size)
     
     print("finished training")
     torch.save(Qnetwork, "DPas4.pth")

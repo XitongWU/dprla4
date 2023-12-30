@@ -4,8 +4,8 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 
-actionR:list[int] = [-1,0,1,0] # up, left, down, right
-actionC:list[int] = [0,-1,0,1]
+actionR = list([-1,0,1,0]) # up, left, down, right
+actionC = list([0,-1,0,1])
 iteration_time:int = 100
 gamma:float = 0.9
 epsilon:float = 0.3
@@ -88,29 +88,37 @@ def Solution1() -> None:
     Q_table:np.ndarray = Table_init(grid)
     i = 0
     rwd_lst = [[],[]]
+    flag = 0
     while (1):
+        old_Q = np.copy(Q_table)
         Q_iteration(Q_table)
         # print(Q_table)
         # print('----end of an iteration-----')
         i += 1
-        if i == 500:
+        if i == 1000:
             break
+
+
+        if np.all(np.abs(Q_table - old_Q) <= 10e-12) and flag == 0:
+            print(f'converge after {i} iterations.')
+            flag = 1
+            # break
         rwd_lst[0].append(Q_table[0][2])
         rwd_lst[1].append(Q_table[0][3])
-        # if i % 20 == 0 and abs(np.average(rwd_lst) - np.average(rwd_lst[-9:]) <= 10e-3):
+        # if abs(np.average(Q_table) - np.average(rwd_lst[-9:]) <= 10e-9):
         #     print(f'converge after {i} iterations.')
         #     break
         
 
-    x = [i for i in range(len(rwd_lst[0]))]
-    plt.scatter(x, rwd_lst[0], label='Action Down', color='blue')
-    plt.scatter(x, rwd_lst[1], label='Action Right', color='red')
+    # x = [i for i in range(len(rwd_lst[0]))]
+    # plt.scatter(x, rwd_lst[0], label='Action Down', color='blue')
+    # plt.scatter(x, rwd_lst[1], label='Action Right', color='red')
 
-    plt.xlabel('Iteration Times')
-    plt.ylabel('Q Value of Action')
-    plt.title('Scatter Plot with Two Actions')
-    plt.legend()
-    plt.show()
+    # plt.xlabel('Iteration Times')
+    # plt.ylabel('Q Value of Action')
+    # plt.title('Scatter Plot with Two Actions')
+    # plt.legend()
+    # plt.show()
 
     print(Q_table)
     print('----end of all iteration-----')
