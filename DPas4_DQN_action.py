@@ -31,7 +31,7 @@ class Action_Network(nn.Module):
 
 actionR = [-1, 0, 1, 0] # up, left, down, right
 actionC = [0, -1, 0, 1]
-iteration_time:int = 500
+iteration_time:int = 1000
 gamma:float = 0.9
 epsilon:float = 0.3
 learning_rate:float = 0.01
@@ -41,6 +41,10 @@ batch_size = 1
 lenR = 5
 lenC = 5
 exp_buffer = deque(maxlen=300)
+flag = 0
+histort_Q = np.zeros((10, 25, 4))
+avg_Q = np.zeros((25, 4))
+
 
 Qnetwork = Action_Network()
 Qhat = copy.deepcopy(Qnetwork)
@@ -177,12 +181,13 @@ def Trace_back() -> None:
     return None
 
 def DQN() -> None:
-    global batch_size, exp_buffer, Qnetwork, Qhat, iteration_time
-    iteration_time = 500
+    global batch_size, exp_buffer, Qnetwork, Qhat, iteration_time, flag
+    # iteration_time = 500
     batch_size = 15
     r = 0
     c = 0
     a = [torch.Tensor] * 4
+    avg_count = 10
     for i in range(4):
         a[i] = get_state(r,c,i)
     
@@ -195,18 +200,51 @@ def DQN() -> None:
         #         print(Qnetwork(a[k])[0,0].item())
         #     print('-----') # up, left, down, right
         extend_buffer(amount=30)
+
+        old_Q = np.array([[0.0]* 4] * 5 * 5)
+        for x in range(5):
+            for y in range(5):
+                for j in range(4):
+                    
+                    input_tensor = get_state(x, y, j)
+                    # print(Qnetwork(input_tensor))
+                    output = Qnetwork(input_tensor)[0,0].item()
+
+                    old_Q[x * 5 + y][j] = output
+
+        histort_Q[avg_count-1] = np.copy(old_Q)
+        avg_count -= 1
+        
         train_batch(batch_size)
 
-        # if len(exp_buffer) > 100:
-        #     train_batch(batch_size)
+        if avg_count == 0:
+            avg_count = 10
+
+            Q_table = np.array([[0.0]* 4] * 5 * 5)
+            for x in range(5):
+                for y in range(5):
+                    for j in range(4):
+                        
+                        input_tensor = get_state(x, y, j)
+                        # print(Qnetwork(input_tensor))
+                        output = Qnetwork(input_tensor)[0,0].item()
+
+                        Q_table[x * 5 + y][j] = output
+
+            # if len(exp_buffer) > 100:
+            #     train_batch(batch_size)
+            avg_Q = np.mean(histort_Q, axis=0)
+            if np.all(np.abs(Q_table - avg_Q) <= 10e-6):
+                print(f'converge after {i} iterations.')
+                flag = 1
     
     print("finished training")
     torch.save(Qnetwork, "DPas4.pth")
     print("Network saved.")
-    # Trace_back()
+    Trace_back()
     return None
 
 # print(get_state(2,2))
 # get_state(2,2,3)
-# DQN()
-Trace_back()
+DQN()
+# Trace_back()
