@@ -151,6 +151,7 @@ def Trace_back() -> None:
     c = 0
     while (1):
         if r == 4 and c == 4:
+            print("we are in the terminal state!")
             break
         
         print(f"row = {r}")
@@ -172,6 +173,7 @@ def Trace_back() -> None:
         r = r + actionR[direction]
         c = c + actionC[direction]
         print(f"This round, go {direct_dict[direction]}")
+        print("press enter to continue")
         input("-----")
         # ====================
     return None
